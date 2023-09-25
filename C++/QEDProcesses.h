@@ -22,7 +22,17 @@ public:
     double ultraRelBremmstrahlungDifferentialCrossSection(double atomic_number, double k,double gamma1);
     double bremmstrahlungCrossSection(double atomic_number, double gamma, double lower_bound, double upper_bound);
     double diffBetheHeitlerCrossSection(double gamma_p, double k, double atomic_number);
-    double betheHeitlerCrossSection(double k, double atomic_number, double lower_bound, double upper_bound); // Add this line
+    double betheHeitlerCrossSection(double k, double atomic_number, double lower_bound, double upper_bound);
+    std::tuple<double,double,double,double,double> calculateCCoefficient(double gamma);
+    double nonRelativisticCoulombTridentDiffCrossSection(double atomic_number, double gamma, double positron_energy);
+    double relativisticCoulombTridentDiffCrossSection(double atomic_number, double gamma, double positron_energy);
+    double totalCoulombTridentCrossSectionLowerLimit(double atomic_number, double gamma);
+    double totalCoulombTridentCrossSectionUpperLimit(double atomic_number, double gamma);
+    double totalCoulombTridentCrossSection(double atomic_number, double gamma);
+    double differentialCoulombTridentCrossSectionLowerLimit(double atomic_number, double gamma, double positron_energy);    
+    double differentialCoulombTridentCrossSectionUpperLimit(double atomic_number, double gamma, double positron_energy);
+    double differentialCoulombTridentCrossSection(double atomic_number, double gamma, double positron_energy);
+
 };
 
 
