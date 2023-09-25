@@ -25,7 +25,7 @@ QED::QED()
         Thomas-Fermi wavelength
         */
         double lambda_c = h_bar / (m_e * c);
-        double lambda_tf = 4.0 * PI * epsilon_0 * pow(h_bar,2) * pow(atomic_number,-1.0/3.0)/(m_e*pow(c,2));
+        double lambda_tf = 4.0 * PI * epsilon_0 * pow(h_bar,2) * pow(atomic_number,-1.0/3.0)/(m_e*pow(e_charge,2));
         return 0.855*lambda_tf / lambda_c;
     }
 
@@ -345,7 +345,7 @@ QED::QED()
 
         double c_ = 4.0 * pow(x,2) / (1.0 - pow(x,2)) * log(1.0 / pow(x,2)) - 4.0/3.0*pow(x,2) + 1.0/6.0 * pow(x,4);
         
-        double c_z = 3.0 * pow(x,2) / (1.0 - pow(x,2)) * ( 1.0 - pow(x,2)/(1.0 - pow(x,2)) * log(1.0/(x,2)) ) \
+        double c_z = 3.0 * pow(x,2) / (1.0 - pow(x,2)) * ( 1.0 - pow(x,2)/(1.0 - pow(x,2)) * log(1.0/pow(x,2)) ) \
             - 13.0/5.0 * pow(x,2) + 7.0/4.0 * pow(x,4) - 9.0/10.0 * pow(x,6) + 1.0/5.0 * pow(x,8);
         
         double c_r = -3.0 / 2.0 * pow(x,2) / (1.0 - pow(x,2)) * ( 1.0 - pow(x,2)/(1.0 - pow(x,2)) * log(1.0/pow(x,2)) ) \
@@ -426,8 +426,8 @@ QED::QED()
         double e_p = (positron_energy - 2.0) * m_e * pow(c,2); //Energy of the positron
 
         double part1 = 56.0 / (9.0 * PI) * pow(atomic_number * r_e * alpha,2);
-        double part2 = log( c1 * e_p/( m_e*pow(c,2)));
-        double part3 = log(c2 * m_e*(c,2) * gamma / e_p )* m_e*pow(c,2) / (e_p);
+        double part2 = log(c1 * e_p/( m_e*pow(c,2)));
+        double part3 = log(c2 * m_e*pow(c,2) * gamma / e_p )* m_e*pow(c,2) / (e_p);
 
         return part1 * part2 * part3;
     }
@@ -535,8 +535,6 @@ QED::QED()
 
 
         double total_energy = (positron_energy - 2.0) * m_e * pow(c,2);
-
-        double x = 1/ gamma;
 
         std::tuple<double,double,double,double,double> c_coefficients = calculateCCoefficient(gamma);
 
