@@ -13,7 +13,7 @@ const float PI = constants::pi<double>();
 const float alpha = pow(e_charge,2) / (4 * PI * epsilon_0 * h_bar * c); // fine structure constant
 const float r_e = pow(e_charge,2) / (4 * PI * epsilon_0 * m_e * pow(c,2)); // classical electron radius
 const float conversion_factor = 1.0e-6 * m_e * pow(c,2) / e_charge;  // Conversion factor from MeV to SI units
-
+const double m =  m_e*pow(c,2) / e_charge / 1e9;
 
 QED::QED()
 {
@@ -628,6 +628,654 @@ QED::QED()
          }
     }
 
+
+QEDBlackburn::QEDBlackburn()
+{
+}
+    
+
+    double QEDBlackburn::auxilaryFunctionT(double chi)
+    {
+        /*
+        Calculate the auxilary function T.
+
+
+        Parameters
+        ----------
+        Input:
+            chi : float
+            The quantum nonlinearity parameter chi.  
+
+        Returns
+        -------
+        the auxilary function T
+        */
+
+       double T = 0.16 * boost::math::cyl_bessel_k(1.0/3.0, 4.0 /(3.0 * chi) )/ chi;
+       return T;
+    }
+
+    double QEDBlackburn::auxilaryFunctionR(double x)
+    {
+        /*
+        Calculate the auxilary function R. It contains a modified bessel funcition
+        of the second kind.
+
+
+        Parameters
+        ----------
+        Input:
+            x : float
+            The quantum nonlinearity parameter chi.
+
+        Returns
+        -------
+        aux_r the auxilary function R
+        */
+
+        double numerator = 0.453 * pow(boost::math::cyl_bessel_k(1.0/3.0, 4.0 /(3.0 * x)),2);
+        double denominator = 1.0 +  0.145 * pow(x,1.0/4.0) * log(1.0 + 2.26*x) + 0.330*x;
+        double aux_r = numerator / denominator;
+
+        return aux_r;
+    }
+
+
+    double QEDBlackburn::auxilaryFunctionG(double x)
+    {
+        /*
+        Calculate the auxilary function S. It contains a modified bessel funcition
+        of the second kind.
+
+
+        Parameters
+        ----------
+        Input:
+            x : float
+            The quantum nonlinearity parameter chi.
+
+        Returns
+        -------
+        aux_g the auxilary function G
+        */
+
+       double  g_func = pow(1.0 + 4.8 * (1.0 + x) * log(1.0 + 1.7*x) + 2.44*pow(x,2) , -2.0/3.0);
+       return g_func;
+    }
+
+    double QEDBlackburn::calculateChi(double gamma_e, double a0, double omega_0, double phi, double n)
+    {
+        /*
+        Calculate the quantum nonlinearity parameter chi for an electron, equation 7 from
+        Blackburn.
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            The laser frequency.
+
+            phi : float
+            The phase of the laser.
+
+            n : float
+            The refractive index of the medium.
+
+        Returns
+        -------
+        chi the quantum nonlinearity parameter
+        */
+
+        double part1 = 2.0 * gamma_e * a0 * omega_0 * m;
+        double part2 = exp(log(2) * pow(phi,2) / (2.0 / pow(PI*n,2) ));
+
+        double chi = part1 * part2;
+        return chi;
+    }
+
+    double QEDBlackburn::calculatePairProductionProbability(double a0, double gamma_e, double omega_0, double omega, double n)
+    {
+        /*
+        Calculate the pair production probability for an electron, equation 7 from
+        Blackburn.
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            The laser frequency.
+
+            phi : float
+            The phase of the laser.
+
+            n : float
+            The refractive index of the medium.
+
+
+        Returns
+        -------
+        pair_production_probability the pair production probability
+        */
+
+        double x = 2.0 * a0 * omega_0 * omega / pow(m,2);
+        double aux_r = auxilaryFunctionR(x);
+
+        double pair_production_probability = alpha * a0 * n * aux_r;
+
+        return pair_production_probability;
+    }
+
+
+    double QEDBlackburn::calculateRadiatedEnergy(double gamma_e, double a0, double omega_0, double chi_c)
+    {
+        /*
+        Calculate the radiated energy for an electron.
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            The laser frequency.
+
+            chi_c : float
+            The quantum nonlinearity parameter chi.
+
+        Returns
+        -------
+        radiated_energy the radiated energy
+        */
+
+        double part1 = sqrt(2.0 * PI);
+
+        double log_argument = 2.0 * gamma_e * a0 * omega_0 /(m * chi_c);
+        
+        double numerator = 2.0 * log(log_argument);
+        double denominator = 1.0 * 2.0 * log(log_argument);
+
+        double radiated_energy = part1 * sqrt(numerator / denominator);
+
+        return radiated_energy;
+    }
+
+    double QEDBlackburn::calculateCriticalChiRR(double gamma_e,double a0, double omega_0, double chi)
+    {
+        /*
+        Calculate the critical quantum nonlinearity parameter chi for radiation reaction.
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            The laser frequency.
+
+            chi : float
+            The quantum nonlinearity parameter chi.
+
+        Returns
+        -------
+        chi_c the critical quantum nonlinearity parameter chi as a double
+        */
+
+        double radiated_energy = calculateRadiatedEnergy(gamma_e, a0, omega_0, chi);
+        double chi_critica_rr = chi / (1.0 + radiated_energy / (2.0 * gamma_e * m));
+
+        return chi_critica_rr;
+    }
+
+
+    double QEDBlackburn::criticalChi(double gamma_e, double a0, double omega_0, double n)
+    {
+        /*
+        Calculate the critical quantum nonlinearity parameter chi.
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            The laser frequency.
+
+            n : float
+            The refractive index of the medium.
+
+        Returns
+        -------
+        chi_c the critical quantum nonlinearity parameter chi as a double
+        */
+
+        auto chi_func = [this, &a0, &gamma_e, &omega_0, &n](double chi) -> double {
+            double part1 = pow(chi, 4) * pow(this->auxilaryFunctionG(chi), 2);
+            double part2 = 72.0 * log(2.0) / pow(PI * alpha, 2) * (gamma_e * omega_0 / pow(n * m, 2));
+            double part3 = log(2.0 * (gamma_e * a0 * omega_0) / (m * chi));
+
+            double value = part1 - (part2 * part3);
+
+            return value;
+        };
+
+        double min_guess = 1e-10;  // Adjust as needed
+        double max_guess = 10.0; // Adjust as needed
+        double tolerance = 1e-10; // Adjust as needed
+
+        std::pair <double, double > critical_chi = boost::math::tools::brent_find_minima(chi_func, min_guess, max_guess, tolerance);
+
+        return std::get<1>(critical_chi);
+    }
+
+
+    double QEDBlackburn::criticalFrequency(double gamma_e, double a0, double omega_0, double chi_c)
+    {
+        /*
+        Calculate the critical frequency.
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            reference frequency.
+
+            chi_c : float
+            The critical quantum nonlinearity parameter chi.
+
+        Returns
+        -------
+            omega_c the critical frequency as a double
+        */
+
+        double critical_chi_rr = calculateCriticalChiRR(gamma_e, a0, omega_0, chi_c);
+        double sqrt_argument = 2.0*critical_chi_rr * m / (a0 * gamma_e * omega_0);
+
+        double numerator = gamma_e * m * sqrt(sqrt_argument);
+        double denominator = 1.0 + sqrt(sqrt_argument);
+
+        double omega_c = numerator / denominator;
+        return omega_c;
+
+    }
+
+    double QEDBlackburn::calculateCriticalPhase(double gamma_e, double a0, double omega_0, int n)
+    {
+        /*
+        Calculate the critical phase.
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            reference frequency.
+
+            n : float
+            The refractive index of the medium.
+
+
+        Returns
+        -------
+            phi_c the critical phase as a double
+        */
+
+
+        double chi_c = criticalChi(gamma_e, a0, omega_0, n);
+        double part1 = 2.0 * pow(PI*n,2) / log(2.0);
+        double part2 = log(2.0 * gamma_e * a0 * omega_0 / (chi_c * m));
+
+        double phi_critical = sqrt(part1 * part2);
+
+        return phi_critical;
+    }
+
+
+
+    double QEDBlackburn::correctionFactorFhe(int n, double phi_c)
+    {
+        /*
+        Calculate the correction factor Fhe.
+
+
+        Parameters
+        ----------
+        Input:
+            n : float
+            The refractive index of the medium.
+
+            phi_c : float
+            The critical phase.
+
+        Returns
+        -------
+            f_he the correction factor Fhe as a double
+        */
+
+       double erf_function_argument = sqrt(2.0* log(2)) * phi_c/(2 * PI * n);
+
+       double f_he = 1.0 - erf(erf_function_argument);
+
+       return f_he;
+    }
+
+double QEDBlackburn::calculatePhotonEnergySpectrum(double gamma_e, double a0, double omega_0, double omega, int n)
+{
+    /*
+    Calculate the photon energy spectrum.
+
+
+    Parameters
+    ----------
+    Input:
+        gamma_e : float
+        The Lorentz factor of the electron.
+
+        a0 : float
+        The normalized vector potential.
+
+        omega_0 : float
+        The laser frequency.
+
+        omega : float
+        The photon frequency.
+
+        n : float
+        The refractive index of the medium.
+
+    Returns
+    -------
+        photon_energy_spectrum the photon energy spectrum as a double
+    */
+
+    double phi_c = criticalFrequency(gamma_e, a0, omega_0, n);
+    double chi_c = criticalChi(gamma_e, a0, omega_0, n);
+    double corr_factor = correctionFactorFhe(n, phi_c);
+    double critical_chi_rr = calculateCriticalChiRR(gamma_e, a0, omega_0, chi_c);
+
+    double energy_0 = gamma_e * m;
+    
+    double chi_0 = 2.0 * gamma_e * a0 * omega_0 / m;
+
+    double part1 = sqrt(3.0) * PI * alpha * corr_factor / ( 2.0 * log(2.0));
+    double part2 = a0 * n * critical_chi_rr / chi_0 / (sqrt(energy_0)* sqrt(1.0 + 2.0 * log(chi_0/chi_c)));
+    double part3 = exp(- 2.0 * omega / (3.0 * critical_chi_rr * (energy_0 - omega))) / sqrt( 3.0 * critical_chi_rr * (energy_0 - omega) * 4.0 * omega);
+
+    double dn_domega = part1 * part2 * part3;
+
+    return dn_domega;
+}
+
+    double QEDBlackburn::positronYield(double gamma_e, double a0, double omega_0,int n)
+    {
+        /*
+        Calculate the positron yield.
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            The laser frequency.
+
+            n : float
+            The refractive index of the medium.
+
+        Returns
+        -------
+            positron_yield the positron yield as a double
+        */
+
+        
+        double critical_chi = criticalChi(gamma_e, a0, omega_0, n);
+        double omega_critical = criticalFrequency(gamma_e, a0, omega_0, n);
+        double pair_prod_probability = calculatePairProductionProbability(a0, gamma_e, omega_0, omega_critical, n);
+        double chi_critical_rr = calculateCriticalChiRR(gamma_e, a0, omega_0, critical_chi);
+        double dn_domega = calculatePhotonEnergySpectrum(gamma_e, a0, omega_0, omega_critical, n);
+
+
+        double part1 = 3.0 * PI * pair_prod_probability * chi_critical_rr / sqrt(2);
+        double part2 = pow(gamma_e * m - omega_critical,2) / (gamma_e * m) * dn_domega;
+
+        double positron_yield = part1 * part2;
+
+        return positron_yield;
+    }
+
+QEDReconstructionMethods::QEDReconstructionMethods()
+{
+}
+
+
+    double QEDReconstructionMethods::particleBinningAmaro(std::map<std::string,float> cache, std::string beam_type)
+    {
+        /*
+        Calculate the particle binning for the Amaro method.
+
+
+        Parameters
+        ----------
+        Input:
+            cache : map
+            The cache of the simulation.
+
+            beam_type : string
+            The type of beam.
+
+        Returns
+        -------
+            particle_binning : double
+                The differential rate of photon production by nonlinear inverse
+                compton scattering.
+        */
+
+        if (beam_type == "widebeam")
+            {
+            double n0 = cache["n0"];
+            double w0 = cache["w0"];
+            double a0 = cache["a0"];
+            
+            double zmin = cache["zmin"];
+            double zmax = cache["zmax"];
+            double z_r = cache["z_r"];
+            
+            
+            double part1 = 2 * PI* n0 * pow(w0 ,2) / a0;
+
+            auto integrand = [&z_r](double z) -> double {
+                return 1.0 + pow(z/z_r,2);
+            };
+            double error_estimate = 0.0;
+            double L1_norm = 1.0;
+            double integrated_value = boost::math::quadrature::trapezoidal(integrand, zmin,zmax, error_estimate, L1_norm);
+
+            double dnda = part1*integrated_value;
+
+            return dnda;
+            }
+        else if (beam_type == "shortbeam")
+            {   
+
+            double a0_eff = cache["a0_eff"];
+            double n0 = cache["n0"];
+            double W0 = cache["W0"];
+            double a0 = cache["a0"];
+            double R = cache["R"];
+            double delta = cache["delta"];
+            
+            double part1 = n0 * pow(W0,2) /(pow(R,2) * a0_eff) * pow(a0_eff/a0, pow(W0/R,2));
+            
+            double exp1 = exp(-pow(delta,2) / pow(R,2));
+
+            double bess_argument = 2.0 * delta * W0 / pow(R,2) * sqrt(log(a0/a0_eff));
+            double part2 = boost::math::cyl_bessel_i(0,bess_argument);
+            
+            
+            double dnda = part1 * exp1 * part2;
+
+            return dnda;
+            }
+        else if (beam_type == "thinbeam")
+            {
+
+            double N = cache["N"];
+            double z_r = cache["z_r"];
+            double a0 = cache["a0"];
+            double a0_eff = cache["a0_eff"];
+            double L = cache["L"];
+
+            double part1 = 4*N*z_r/L;
+            double part2 = pow(a0,2) * pow(a0_eff,2);
+            double part3 = 1/sqrt(pow(a0,2) - pow(a0_eff,2));
+
+            return part1*part2*part3;
+            }
+
+        else{
+            cout << "Beam type not recognized" << endl;
+            return 0.0;
+        }
+    }
+
+    double QEDReconstructionMethods::make3dGaussDistribution(double x, double y, double z, double a0, double waist, double wavelength)
+    {
+        /*
+        Calculate the 3D Gaussian distribution.
+
+
+        Parameters
+        ----------
+        Input:
+            x : float
+            The x coordinate.
+
+            y : float
+            The y coordinate.
+
+            z : float
+            The z coordinate.
+
+            a0 : float
+            The normalized vector potential.
+
+            waist : float
+            The waist of the laser.
+
+            wavelength : float
+            The wavelength of the laser.
+
+        Returns
+        -------
+            gauss_distribution : double
+                The 3D Gaussian distribution.
+        */
+
+
+        double z_r = PI * pow(waist,2) / wavelength;
+
+        double r2 = pow(x,2) + pow(y,2);
+
+        double gaussian_dist = a0/sqrt(1.0 + pow(z/z_r,2)) * exp(-r2/pow(waist,2) * 1.0/(1.0 + pow(z/z_r,2)));
+        return gaussian_dist;
+    }
+
+    double QEDReconstructionMethods::calculatePositronsProducedFromBeam(double gamma_e, double a0, double omega_0,double delta, double r_, double waist,double ne,int n)
+    {
+        /*
+        Calculate the positrons produced from the beam.
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            The laser frequency.
+
+            delta : float
+            The distance from the center of the beam.
+
+            r_ : float
+            The radius of the beam.
+
+            waist : float
+            The waist of the laser.
+
+            ne : float
+            The electron number density.
+
+            n : float
+            The refractive index of the medium.
+
+        Returns
+        -------
+            positrons_produced : double
+                The positrons produced from the beam.
+        */
+
+        QEDBlackburn blackburn;                 //One has to initialize the class and then call the function
+        double chi_c = blackburn.criticalChi(gamma_e, a0, omega_0, n);
+        double omega_c = blackburn.criticalFrequency(gamma_e, a0, omega_0, chi_c);
+        double number_of_positrons = blackburn.positronYield(gamma_e, a0, omega_0, n);
+
+        double part1 = 0.727 * a0 * omega_0 * omega_c /pow(m,2);
+        double part2 = pow(waist,2) *exp( - pow(delta,2) / pow(r_,2)) / pow(r_,2);
+
+        double positrons_from_beam = part1 * part2 * number_of_positrons * ne;
+        return positrons_from_beam;
+    }
 
 
 

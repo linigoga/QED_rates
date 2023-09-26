@@ -6,7 +6,11 @@
 #include <boost/math/quadrature/gauss.hpp>
 #include <boost/math/special_functions/zeta.hpp>
 #include <boost/math/special_functions.hpp>
+#include <boost/math/special_functions/bessel.hpp>
 #include <boost/math/quadrature/trapezoidal.hpp>
+#include <boost/math/tools/roots.hpp>
+#include <boost/math/tools/minima.hpp>
+#include <map>
 
 
 class QED{
@@ -35,5 +39,32 @@ public:
 
 };
 
+class QEDBlackburn{
+    public:
+    QEDBlackburn();
+
+    double auxilaryFunctionT(double chi);
+    double auxilaryFunctionR(double x);
+    double auxilaryFunctionG(double x);
+    double calculateChi(double gamma_e, double a0, double omega_0, double phi, double n);
+    double calculatePairProductionProbability(double a0, double gamma_e, double omega_0, double omega, double n);
+    double calculateRadiatedEnergy(double gamma_e, double a0, double omega_0, double chi_c);
+    double calculateCriticalChiRR(double gamma_e,double a0, double omega_0, double chi);
+    double criticalChi(double gamma_e, double a0, double omega_0, double n);
+    double criticalFrequency(double gamma_e, double a0, double omega_0, double chi_c);
+    double calculateCriticalPhase(double gamma_e, double a0, double omega_0, int n);
+    double correctionFactorFhe(int n, double phi_c);
+    double calculatePhotonEnergySpectrum(double gamma_e, double a0, double omega_0, double omega, int n);
+    double positronYield(double gamma_e, double a0, double omega_0,int n);
+};
+
+class QEDReconstructionMethods{
+    public:
+    QEDReconstructionMethods();
+
+    double particleBinningAmaro(std::map<std::string,float> cache, std::string beam_type);
+    double make3dGaussDistribution(double x, double y, double z, double a0, double waist, double wavelength);
+    double calculatePositronsProducedFromBeam(double gamma_e, double a0, double omega_0,double delta, double r_, double waist, double ne,int n);
+};
 
 #endif // QEDPROCESSES_H
