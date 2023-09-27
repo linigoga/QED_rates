@@ -51,11 +51,14 @@ class QEDBlackburn{
     double calculateRadiatedEnergy(double gamma_e, double a0, double omega_0, double chi_c);
     double calculateCriticalChiRR(double gamma_e,double a0, double omega_0, double chi);
     double criticalChi(double gamma_e, double a0, double omega_0, double n);
+    double criticalChiModulus(double gamma_e, double a0, double omega_0, double n);
     double criticalFrequency(double gamma_e, double a0, double omega_0, double chi_c);
     double calculateCriticalPhase(double gamma_e, double a0, double omega_0, int n);
+    double calculateCriticalPhaseModulus(double gamma_e, double a0, double omega_0, double n);
     double correctionFactorFhe(int n, double phi_c);
-    double calculatePhotonEnergySpectrum(double gamma_e, double a0, double omega_0, double omega, int n);
+    double calculatePhotonEnergySpectrum(double gamma_e, double a0, double omega_0, double omega, double n);
     double positronYield(double gamma_e, double a0, double omega_0,int n);
+    double calculateProbabilityDensity(double gamma_e,double a0, double omega_0, double n);
 };
 
 class QEDReconstructionMethods{

@@ -632,7 +632,6 @@ QED::QED()
 QEDBlackburn::QEDBlackburn()
 {
 }
-    
 
     double QEDBlackburn::auxilaryFunctionT(double chi)
     {
@@ -651,7 +650,7 @@ QEDBlackburn::QEDBlackburn()
         the auxilary function T
         */
 
-       double T = 0.16 * boost::math::cyl_bessel_k(1.0/3.0, 4.0 /(3.0 * chi) )/ chi;
+       double T = 0.16 * pow(boost::math::cyl_bessel_k(1.0/3.0, 4.0 /(3.0 * chi) ),2)/ chi;
        return T;
     }
 
@@ -878,23 +877,89 @@ QEDBlackburn::QEDBlackburn()
         */
 
         auto chi_func = [this, &a0, &gamma_e, &omega_0, &n](double chi) -> double {
-            double part1 = pow(chi, 4) * pow(this->auxilaryFunctionG(chi), 2);
-            double part2 = 72.0 * log(2.0) / pow(PI * alpha, 2) * (gamma_e * omega_0 / pow(n * m, 2));
-            double part3 = log(2.0 * (gamma_e * a0 * omega_0) / (m * chi));
+                double part1 = pow(chi, 4) * this->auxilaryFunctionG(chi) * this->auxilaryFunctionG(chi);
+                double part2 = 72.0 * log(2.0) / pow(PI * alpha, 2) * pow(gamma_e * omega_0 / (n * m), 2);                
+                double part3 = log(2.0 * (gamma_e * a0 * omega_0) / (m * chi));
+                
+                return part1 - (part2 * part3);
+            };
 
-            double value = part1 - (part2 * part3);
+                    double min_guess = 1e-10;  // Adjust as needed
+        double max_guess = 1e-5;    // Adjust as needed
 
-            return value;
+        // Ensure that chi_func(min_guess) and chi_func(max_guess) have opposite signs
+        if (chi_func(min_guess) * chi_func(max_guess) > 0) {
+            // If chi_func(min_guess) and chi_func(max_guess) have the same sign, we need to adjust the interval
+            double f_min = chi_func(min_guess);
+            double f_max = chi_func(max_guess);
+
+            if (f_min > 0 && f_max > 0) {
+                // Both values are positive, so we need to increase the minimum guess
+                while (f_min > 0 && min_guess < max_guess) {
+                    min_guess *= 10.0;
+                    f_min = chi_func(min_guess);
+                }
+            } else if (f_min < 0 && f_max < 0) {
+                // Both values are negative, so we need to decrease the maximum guess
+                while (f_max < 0 && max_guess > min_guess) {
+                    max_guess /= 10.0;
+                    f_max = chi_func(max_guess);
+                }
+            } else {
+                // The values have opposite signs, so we can use the current interval
+                // without modification
+            }
+
+            if (chi_func(min_guess) * chi_func(max_guess) > 0) {
+                // Handle error: The adjusted interval still does not bracket a root
+                throw std::runtime_error("The provided interval does not bracket a root.");
+            }
+        }
+
+        auto termination_condition = [](double min, double max) {
+            return abs(min - max) <= boost::math::tools::eps_tolerance<double>()(std::max(abs(min), abs(max)), 32);
         };
 
-        double min_guess = 1e-10;  // Adjust as needed
-        double max_guess = 10.0; // Adjust as needed
-        double tolerance = 1e-10; // Adjust as needed
-
-        std::pair <double, double > critical_chi = boost::math::tools::brent_find_minima(chi_func, min_guess, max_guess, tolerance);
-
-        return std::get<1>(critical_chi);
+        std::pair<double, double> result = boost::math::tools::bisect(chi_func, min_guess, max_guess, termination_condition);
+        return (result.first + result.second) / 2.0;
     }
+
+
+    double QEDBlackburn::criticalChiModulus(double gamma_e, double a0, double omega_0, double n)
+{
+    // Precompute constants
+    const double CONSTANT_PART = 72.0 * log(2.0) / pow(PI * alpha, 2) * pow(gamma_e * omega_0 / (n * m), 2);
+
+    auto chi_func = [&a0, &gamma_e, &omega_0, &CONSTANT_PART](double chi) -> double {
+        return pow(chi, 4) - CONSTANT_PART * log(2.0 * (gamma_e * a0 * omega_0) / (m * chi));
+    };
+
+    double min_guess = 1e-10;
+    double max_guess = 1e2;
+
+    // Ensure that chi_func(min_guess) and chi_func(max_guess) have opposite signs
+    while (chi_func(min_guess) * chi_func(max_guess) > 0) {
+        if (chi_func(min_guess) > 0) {
+            min_guess *= 10.0;
+        } else {
+            max_guess /= 10.0;
+        }
+
+        // Check if we've exhausted our search interval
+        if (min_guess >= max_guess) {
+            throw std::runtime_error("The provided interval does not bracket a root.");
+        }
+    }
+
+    auto termination_condition = [](double min, double max) {
+        return abs(min - max) <= boost::math::tools::eps_tolerance<double>()(std::max(abs(min), abs(max)), 32);
+    };
+
+    std::pair<double, double> result = boost::math::tools::bisect(chi_func, min_guess, max_guess, termination_condition);
+
+    return (result.first + result.second) / 2.0;
+}
+
 
 
     double QEDBlackburn::criticalFrequency(double gamma_e, double a0, double omega_0, double chi_c)
@@ -962,14 +1027,63 @@ QEDBlackburn::QEDBlackburn()
         */
 
 
-        double chi_c = criticalChi(gamma_e, a0, omega_0, n);
-        double part1 = 2.0 * pow(PI*n,2) / log(2.0);
-        double part2 = log(2.0 * gamma_e * a0 * omega_0 / (chi_c * m));
 
+
+        double chi_c = criticalChi(gamma_e, a0, omega_0, n);
+        long double part1 = 2.0 * pow(PI*n,2) / log(2.0);
+        long double part2 = log(2.0 * gamma_e * a0 * omega_0 / (chi_c * m));
+                        
         double phi_critical = sqrt(part1 * part2);
 
         return phi_critical;
     }
+
+
+     double QEDBlackburn::calculateCriticalPhaseModulus(double gamma_e, double a0, double omega_0, double n)
+    {
+        /*
+        ############
+        WARNING
+        ###########
+        THERE IS AN ISSUE WITH THIS FUNCTION. FOR SOME REASON, IT DOES NOT 
+        GIVE THE ADEQUATE RESULT. 
+
+
+        Calculate the critical phase insie the modulus.
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            reference frequency.
+
+            n : float
+            number of cycles.
+
+
+        Returns
+        -------
+            phi_c the critical phase as a double
+        */
+
+
+        double chi_c = criticalChiModulus(gamma_e, a0, omega_0, n);
+        double part1 = 2.0 * pow(PI*n,2) / std::log(2.0)*std::log((2.0 * gamma_e * a0 * omega_0 )/ (chi_c * m));
+        
+        double phi_critical = std::sqrt(part1);
+
+    
+
+        return phi_critical;
+    }
+
 
 
 
@@ -1000,7 +1114,7 @@ QEDBlackburn::QEDBlackburn()
        return f_he;
     }
 
-double QEDBlackburn::calculatePhotonEnergySpectrum(double gamma_e, double a0, double omega_0, double omega, int n)
+double QEDBlackburn::calculatePhotonEnergySpectrum(double gamma_e, double a0, double omega_0, double omega, double n)
 {
     /*
     Calculate the photon energy spectrum.
@@ -1088,6 +1202,21 @@ double QEDBlackburn::calculatePhotonEnergySpectrum(double gamma_e, double a0, do
 
         return positron_yield;
     }
+
+    /*ouble QEDBlackburn::calculateProbabilityDensity(double gamma_e, double a0, double omega_0, double omega, double n)
+    {
+        /*
+        Calculate the probability density.
+
+    
+
+        double chi_c = criticalChi(gamma_e, a0, omega_0, n);
+
+
+    }
+    */
+
+
 
 QEDReconstructionMethods::QEDReconstructionMethods()
 {
