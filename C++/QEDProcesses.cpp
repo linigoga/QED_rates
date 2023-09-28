@@ -804,13 +804,11 @@ QEDBlackburn::QEDBlackburn()
         -------
         radiated_energy the radiated energy
         */
+        double part1 = sqrt(2.0 * PI) * gamma_e * m;
+        double numerator = 2.0 * std::log(2.0 * gamma_e * a0 * omega_0 /(m * chi_c));
+        double denominator = 1.0 + 2.0 * std::log(2.0 * gamma_e * a0 * omega_0 /(m * chi_c));
 
-        double part1 = sqrt(2.0 * PI);
-
-        double log_argument = 2.0 * gamma_e * a0 * omega_0 /(m * chi_c);
-        
-        double numerator = 2.0 * log(log_argument);
-        double denominator = 1.0 * 2.0 * log(log_argument);
+                            
 
         double radiated_energy = part1 * sqrt(numerator / denominator);
 
@@ -850,70 +848,56 @@ QEDBlackburn::QEDBlackburn()
     }
 
 
+
+
     double QEDBlackburn::criticalChi(double gamma_e, double a0, double omega_0, double n)
-    {
-        /*
-        Calculate the critical quantum nonlinearity parameter chi.
+        {   
+            /*
+            Calculate the critical quantum nonlinearity parameter chi.
 
 
-        Parameters
-        ----------
-        Input:
-            gamma_e : float
-            The Lorentz factor of the electron.
+            Parameters
+            ----------
+            Input:
+                gamma_e : float
+                The Lorentz factor of the electron.
 
-            a0 : float
-            The normalized vector potential.
+                a0 : float
+                The normalized vector potential.
 
-            omega_0 : float
-            The laser frequency.
+                omega_0 : float
+                The laser frequency.
 
-            n : float
-            The refractive index of the medium.
+                n : float
+                The refractive index of the medium.
 
-        Returns
-        -------
-        chi_c the critical quantum nonlinearity parameter chi as a double
-        */
+            Returns
+            -------
+            chi_c the critical quantum nonlinearity parameter chi as a double
+            */
 
-        auto chi_func = [this, &a0, &gamma_e, &omega_0, &n](double chi) -> double {
-                double part1 = pow(chi, 4) * this->auxilaryFunctionG(chi) * this->auxilaryFunctionG(chi);
-                double part2 = 72.0 * log(2.0) / pow(PI * alpha, 2) * pow(gamma_e * omega_0 / (n * m), 2);                
-                double part3 = log(2.0 * (gamma_e * a0 * omega_0) / (m * chi));
-                
-                return part1 - (part2 * part3);
-            };
+        // Precompute constants
+        const double CONSTANT_PART = 72.0 * log(2.0) / pow(PI * alpha, 2) * pow(gamma_e * omega_0 / (n * m), 2);
 
-                    double min_guess = 1e-10;  // Adjust as needed
-        double max_guess = 1e-5;    // Adjust as needed
+        auto chi_func = [this, &a0, &gamma_e, &omega_0, &CONSTANT_PART](double chi) -> double {
+            double g_chi = this->auxilaryFunctionG(chi);
+            return pow(chi, 4) * g_chi * g_chi - CONSTANT_PART * log(2.0 * (gamma_e * a0 * omega_0) / (m * chi));
+        };
+
+        double min_guess = 1e-10;
+        double max_guess = 1e-5;
+        const int MAX_ADJUSTMENTS = 100;
+        int adjustments = 0;
 
         // Ensure that chi_func(min_guess) and chi_func(max_guess) have opposite signs
-        if (chi_func(min_guess) * chi_func(max_guess) > 0) {
-            // If chi_func(min_guess) and chi_func(max_guess) have the same sign, we need to adjust the interval
-            double f_min = chi_func(min_guess);
-            double f_max = chi_func(max_guess);
+        while (chi_func(min_guess) * chi_func(max_guess) > 0 && adjustments < MAX_ADJUSTMENTS) {
+            min_guess /= 10.0;
+            max_guess *= 10.0;
+            adjustments++;
+        }
 
-            if (f_min > 0 && f_max > 0) {
-                // Both values are positive, so we need to increase the minimum guess
-                while (f_min > 0 && min_guess < max_guess) {
-                    min_guess *= 10.0;
-                    f_min = chi_func(min_guess);
-                }
-            } else if (f_min < 0 && f_max < 0) {
-                // Both values are negative, so we need to decrease the maximum guess
-                while (f_max < 0 && max_guess > min_guess) {
-                    max_guess /= 10.0;
-                    f_max = chi_func(max_guess);
-                }
-            } else {
-                // The values have opposite signs, so we can use the current interval
-                // without modification
-            }
-
-            if (chi_func(min_guess) * chi_func(max_guess) > 0) {
-                // Handle error: The adjusted interval still does not bracket a root
-                throw std::runtime_error("The provided interval does not bracket a root.");
-            }
+        if (adjustments == MAX_ADJUSTMENTS) {
+            throw std::runtime_error("Failed to bracket the root after maximum adjustments.");
         }
 
         auto termination_condition = [](double min, double max) {
@@ -921,8 +905,11 @@ QEDBlackburn::QEDBlackburn()
         };
 
         std::pair<double, double> result = boost::math::tools::bisect(chi_func, min_guess, max_guess, termination_condition);
+
         return (result.first + result.second) / 2.0;
     }
+
+
 
 
     double QEDBlackburn::criticalChiModulus(double gamma_e, double a0, double omega_0, double n)
@@ -999,7 +986,7 @@ QEDBlackburn::QEDBlackburn()
 
     }
 
-    double QEDBlackburn::calculateCriticalPhase(double gamma_e, double a0, double omega_0, int n)
+    double QEDBlackburn::calculateCriticalPhase(double gamma_e, double a0, double omega_0, double n)
     {
         /*
         Calculate the critical phase.
@@ -1042,13 +1029,6 @@ QEDBlackburn::QEDBlackburn()
      double QEDBlackburn::calculateCriticalPhaseModulus(double gamma_e, double a0, double omega_0, double n)
     {
         /*
-        ############
-        WARNING
-        ###########
-        THERE IS AN ISSUE WITH THIS FUNCTION. FOR SOME REASON, IT DOES NOT 
-        GIVE THE ADEQUATE RESULT. 
-
-
         Calculate the critical phase insie the modulus.
 
 
@@ -1087,7 +1067,7 @@ QEDBlackburn::QEDBlackburn()
 
 
 
-    double QEDBlackburn::correctionFactorFhe(int n, double phi_c)
+    double QEDBlackburn::correctionFactorFhe(double n, double phi_c)
     {
         /*
         Calculate the correction factor Fhe.
@@ -1109,7 +1089,9 @@ QEDBlackburn::QEDBlackburn()
 
        double erf_function_argument = sqrt(2.0* log(2)) * phi_c/(2 * PI * n);
 
-       double f_he = 1.0 - erf(erf_function_argument);
+       double f_he = 0.5*(1.0 - erf(erf_function_argument));
+
+
 
        return f_he;
     }
@@ -1152,16 +1134,18 @@ double QEDBlackburn::calculatePhotonEnergySpectrum(double gamma_e, double a0, do
     
     double chi_0 = 2.0 * gamma_e * a0 * omega_0 / m;
 
-    double part1 = sqrt(3.0) * PI * alpha * corr_factor / ( 2.0 * log(2.0));
+    double part1 = sqrt(3.0) * PI * alpha * corr_factor / sqrt( 2.0 * std::log(2.0));
+                   
     double part2 = a0 * n * critical_chi_rr / chi_0 / (sqrt(energy_0)* sqrt(1.0 + 2.0 * log(chi_0/chi_c)));
-    double part3 = exp(- 2.0 * omega / (3.0 * critical_chi_rr * (energy_0 - omega))) / sqrt( 3.0 * critical_chi_rr * (energy_0 - omega) * 4.0 * omega);
+    double part3 = exp(- 2.0 * omega / (3.0 * critical_chi_rr * (energy_0 - omega))) / sqrt( 3.0 * critical_chi_rr * (energy_0 - omega) + 4.0 * omega);
+
 
     double dn_domega = part1 * part2 * part3;
 
     return dn_domega;
 }
 
-    double QEDBlackburn::positronYield(double gamma_e, double a0, double omega_0,int n)
+    double QEDBlackburn::positronYield(double gamma_e, double a0, double omega_0,double n)
     {
         /*
         Calculate the positron yield.
@@ -1202,21 +1186,125 @@ double QEDBlackburn::calculatePhotonEnergySpectrum(double gamma_e, double a0, do
 
         return positron_yield;
     }
-
-    /*ouble QEDBlackburn::calculateProbabilityDensity(double gamma_e, double a0, double omega_0, double omega, double n)
+    double QEDBlackburn::calculateVariance(double gamma_e, double a0, double omega_0, double n, double chi_c)
     {
         /*
-        Calculate the probability density.
+        Calculate the variance of the quantum nonlinearity parameter chi.
 
-    
 
-        double chi_c = criticalChi(gamma_e, a0, omega_0, n);
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
 
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            The laser frequency.
+
+            n : float
+            The refractive index of the medium.
+
+            chi : float
+            The quantum nonlinearity parameter chi. 
+
+        Returns
+        -------
+            variance the variance of the quantum nonlinearity parameter chi as a double
+        */
+
+       double variance = pow(PI*n,2)/std::log(2.0) / ( 1.0 + 2.0 * std::log(2.0 * gamma_e * a0 * omega_0 / (m * chi_c)));
+
+       return variance;
+    }
+
+    double QEDBlackburn::calculateChiAsFunctionOfPhi(double gamma_e, double a0, double omega_0, double phi, double n)
+    {
+        /*
+        Calculate the quantum nonlinearity parameter chi as a function of the phase phi.
+        equation 17 of the manuscript
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            The laser frequency.
+
+            phi : float
+            The phase of the laser.
+
+            n : float
+            number of cycles.
+
+        Returns
+        -------
+            chi the quantum nonlinearity parameter as a double
+        */
+
+        double critical_chi = criticalChi(gamma_e, a0, omega_0, n);
+        double critical_phi = calculateCriticalPhase(gamma_e, a0, omega_0, n);
+        double radiated_energy = calculateRadiatedEnergy(gamma_e, a0, omega_0, critical_chi);
+
+        double variance = calculateVariance(gamma_e, a0, omega_0, n,critical_chi);
+
+        double chi = critical_chi / (1.0 + radiated_energy / (2.0 * gamma_e * m)) * exp(-pow(phi - critical_phi,2) / (2.0 * variance));
+                     
+        return chi;
+    }
+
+    double QEDBlackburn::calculateGammaAsFunctionOfPhi(double gamma_e, double a0, double omega_0, double phi, double n)
+    {
+        /*
+        Calculate the Lorentz factor gamma as a function of the phase phi.
+        equation 16 of the manuscript
+
+
+        Parameters
+        ----------
+        Input:
+            gamma_e : float
+            The Lorentz factor of the electron.
+
+            a0 : float
+            The normalized vector potential.
+
+            omega_0 : float
+            The laser frequency.
+
+            phi : float
+            The phase of the laser.
+
+            n : float
+            number of cycles.
+
+        Returns
+        -------
+            gamma the Lorentz factor as a double
+        */
+
+        double critical_chi = criticalChi(gamma_e, a0, omega_0, n);
+        double critical_phi = calculateCriticalPhase(gamma_e, a0, omega_0, n);
+        
+        double radiated_energy = calculateRadiatedEnergy(gamma_e, a0, omega_0, critical_chi); 
+        
+        double standard_deviation = pow(PI*n,2)/std::log(2.0) * 1.0 / ( 1.0 + 2.0 * std::log(2.0 * gamma_e * a0 * omega_0 / (m * critical_chi)));
+
+        double gamma_f = (2.0 * gamma_e * m - radiated_energy) / (2.0 * gamma_e * m + radiated_energy) * gamma_e;
+
+        double gamma = gamma_f + gamma_e * radiated_energy / (2.0 * gamma_e * m + radiated_energy) * ( 1.0 + erf( phi - critical_phi) / 2.0 * sqrt(standard_deviation));
+
+        return gamma;
 
     }
-    */
-
-
 
 QEDReconstructionMethods::QEDReconstructionMethods()
 {
@@ -1355,7 +1443,7 @@ QEDReconstructionMethods::QEDReconstructionMethods()
         return gaussian_dist;
     }
 
-    double QEDReconstructionMethods::calculatePositronsProducedFromBeam(double gamma_e, double a0, double omega_0,double delta, double r_, double waist,double ne,int n)
+    double QEDReconstructionMethods::calculatePositronsProducedFromBeam(double gamma_e, double a0, double omega_0,double delta, double r_, double waist,double ne,double n)
     {
         /*
         Calculate the positrons produced from the beam.

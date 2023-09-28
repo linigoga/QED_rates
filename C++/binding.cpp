@@ -42,8 +42,12 @@ PYBIND11_MODULE(QEDProcesses, m) {
         .def("calculate_critical_phase_modulus", &QEDBlackburn::calculateCriticalPhaseModulus, py::arg("gamma_e"), py::arg("a0"), py::arg("omega_0"), py::arg("n"))
         .def("correction_factor_fhe", &QEDBlackburn::correctionFactorFhe, py::arg("n"), py::arg("phi_c"))
         .def("calculate_photon_energy_spectrum", &QEDBlackburn::calculatePhotonEnergySpectrum, py::arg("gamma_e"), py::arg("a0"), py::arg("omega_0"), py::arg("omega"), py::arg("n"))
-        .def("positron_yield", &QEDBlackburn::positronYield, py::arg("gamma_e"), py::arg("a0"), py::arg("omega_0"), py::arg("n"));
+        .def("positron_yield", &QEDBlackburn::positronYield, py::arg("gamma_e"), py::arg("a0"), py::arg("omega_0"), py::arg("n"))
+        .def("calculate_chi_as_function_of_phi", &QEDBlackburn::calculateChiAsFunctionOfPhi, py::arg("gamma_e"), py::arg("a0"), py::arg("omega_0"), py::arg("phi"), py::arg("n"))
+        .def("calculate_gamma_as_function_of_phi", &QEDBlackburn::calculateGammaAsFunctionOfPhi, py::arg("gamma_e"), py::arg("a0"), py::arg("omega_0"), py::arg("phi"), py::arg("n"))
+        .def("calculate_variance", &QEDBlackburn::calculateVariance, py::arg("gamma_e"), py::arg("ao"), py::arg("omega_0"), py::arg("n"), py::arg("chi_c"));
 
+        
     py::class_<QEDReconstructionMethods>(m, "QEDReconstructionMethods")
         .def(py::init<>())
         .def("particle_binning_amaro", &QEDReconstructionMethods::particleBinningAmaro, py::arg("cache"), py::arg("beam_type"))

@@ -53,12 +53,15 @@ class QEDBlackburn{
     double criticalChi(double gamma_e, double a0, double omega_0, double n);
     double criticalChiModulus(double gamma_e, double a0, double omega_0, double n);
     double criticalFrequency(double gamma_e, double a0, double omega_0, double chi_c);
-    double calculateCriticalPhase(double gamma_e, double a0, double omega_0, int n);
+    double calculateVariance(double gamma_e, double ao, double omega_0, double n, double chi_c);
+    double calculateCriticalPhase(double gamma_e, double a0, double omega_0, double n);
     double calculateCriticalPhaseModulus(double gamma_e, double a0, double omega_0, double n);
-    double correctionFactorFhe(int n, double phi_c);
+    double correctionFactorFhe(double n, double phi_c);
     double calculatePhotonEnergySpectrum(double gamma_e, double a0, double omega_0, double omega, double n);
-    double positronYield(double gamma_e, double a0, double omega_0,int n);
-    double calculateProbabilityDensity(double gamma_e,double a0, double omega_0, double n);
+    double positronYield(double gamma_e, double a0, double omega_0,double n);
+    double calculateChiAsFunctionOfPhi(double gamma_e, double a0, double omega_0, double phi, double n);
+    double calculateGammaAsFunctionOfPhi(double gamma_e, double a0, double omega_0, double phi, double n);
+  //  double calculateProbabilityDensity(double gamma_e,double a0, double omega_0, double n);
 };
 
 class QEDReconstructionMethods{
@@ -67,7 +70,7 @@ class QEDReconstructionMethods{
 
     double particleBinningAmaro(std::map<std::string,float> cache, std::string beam_type);
     double make3dGaussDistribution(double x, double y, double z, double a0, double waist, double wavelength);
-    double calculatePositronsProducedFromBeam(double gamma_e, double a0, double omega_0,double delta, double r_, double waist, double ne,int n);
+    double calculatePositronsProducedFromBeam(double gamma_e, double a0, double omega_0,double delta, double r_, double waist, double ne,double n);
 };
 
 #endif // QEDPROCESSES_H
