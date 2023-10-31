@@ -284,7 +284,7 @@ QED::QED()
         the differential Bethe-Heitler cross section
         */
 
-        if (k >= 2.0 &&  gamma_p >= 1.0 && gamma_p >= k - 1.0)
+        if (k >= 2.0 &&  gamma_p >= 1.0 && gamma_p <= k - 1.0)
         {
             double coulomb_correction;
             double gamma_e = k - gamma_p;
@@ -301,7 +301,7 @@ QED::QED()
             }
 
             double part1 = 4.0 * pow(atomic_number * r_e,2) * alpha / pow(k,3);
-            double part2 = pow(gamma_p*gamma_e,2) *  (i1Function(delta, lambda_tf) + 1.0 - coulomb_correction);
+            double part2 = (pow(gamma_p,2) + pow(gamma_e,2)) *  (i1Function(delta, lambda_tf) + 1.0 - coulomb_correction);
             double part3 = 2.0/3.0 * gamma_e * gamma_p * (i2Function(delta, lambda_tf) + 5.0 / 6.0 - coulomb_correction);
 
             double diff_sigma_bethe_heitler = part1 * (part2 + part3);
