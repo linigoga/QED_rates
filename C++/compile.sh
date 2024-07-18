@@ -1,19 +1,21 @@
 #!/bin/bash
 
-PYTHON_BIN_PATH="/Users/linigoga/anaconda3/bin/python"
-PYTHON_CONFIG_PATH="/Users/linigoga/anaconda3/bin/python3.10-config"
-PYTHON_LIB_DIR=$($PYTHON_BIN_PATH -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
-#PYBIND_INCLUDE_DIR="/Users/linigoga/anaconda3/lib/python3.10/site-packages/pybind11/include/pybind11"
-PYBIND_INCLUDE_DIR="/Users/linigoga/anaconda3/lib/python3.10/site-packages/pybind11/include"
+# Python Configuration (Adapt for your actual Python version if needed)
+PYTHON_BIN_PATH="/Users/lucasinigogamiz/anaconda3/bin/python"  
+PYTHON_CONFIG_PATH="/Users/lucasinigogamiz/anaconda3/bin/python3.11-config" 
 
+# Project Directories
+PROJECT_DIR="/Users/lucasinigogamiz/Documents/GitHub/QED_rates/C++"
+BUILD_DIR="$PROJECT_DIR/build"
 
-g++ -O0 -g -Wall -shared -std=c++20 -fPIC \
--I$PYBIND_INCLUDE_DIR \
--L$PYTHON_LIB_DIR \
-`$PYTHON_CONFIG_PATH --includes` \
--Wl,-rpath,$PYTHON_LIB_DIR \
--undefined dynamic_lookup \
-binding.cpp QEDProcesses.cpp\
- -o QEDProcesses`$PYTHON_CONFIG_PATH --extension-suffix`
+# Create build directory if it doesn't exist
+mkdir -p $BUILD_DIR
 
+# Change to the build directory
+cd $BUILD_DIR
 
+# Configure CMake (adjust -DPYTHON_EXECUTABLE if your Python is elsewhere)
+cmake -DPYTHON_EXECUTABLE=$PYTHON_BIN_PATH ..
+
+# Build with Make
+make

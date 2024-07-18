@@ -13,9 +13,9 @@ PYBIND11_MODULE(QEDProcesses, m) {
         .def("rel_bremmstrahlung_differential_cross_section", &QED::relBremmstrahlungDifferentialCrossSection, py::arg("atomic_number"), py::arg("k"), py::arg("gamma1"))
         .def("coulomb_correction_term", &QED::coulombCorrectionTerm, py::arg("atomic_number"), py::arg("n"))
         .def("ultra_rel_bremmstrahlung_differential_cross_section", &QED::ultraRelBremmstrahlungDifferentialCrossSection, py::arg("atomic_number"), py::arg("k"), py::arg("gamma1"))
-        .def("bremmstrahlung_cross_section", &QED::bremmstrahlungCrossSection, py::arg("atomic_number"), py::arg("gamma"), py::arg("lower_bound"), py::arg("upper_bound"))
+        .def("bremmstrahlung_cross_section", &QED::bremmstrahlungCrossSection, py::arg("atomic_number"), py::arg("gamma"))
         .def("diff_bethe_heitler_cross_section", &QED::diffBetheHeitlerCrossSection, py::arg("gamma_p"), py::arg("k"), py::arg("atomic_number"))
-        .def("bethe_heitler_cross_section", &QED::betheHeitlerCrossSection, py::arg("k"), py::arg("atomic_number"), py::arg("lower_bound"), py::arg("upper_bound"))
+        .def("bethe_heitler_cross_section", &QED::betheHeitlerCrossSection, py::arg("k"), py::arg("atomic_number"))
         .def("calculate_c_coefficient", &QED::calculateCCoefficient, py::arg("gamma"))
         .def("non_relativistic_coulomb_trident_diff_cross_section", &QED::nonRelativisticCoulombTridentDiffCrossSection, py::arg("atomic_number"), py::arg("gamma"), py::arg("positron_energy"))
         .def("relativistic_coulomb_trident_diff_cross_section", &QED::relativisticCoulombTridentDiffCrossSection, py::arg("atomic_number"), py::arg("gamma"), py::arg("positron_energy"))
@@ -24,7 +24,8 @@ PYBIND11_MODULE(QEDProcesses, m) {
         .def("total_coulomb_trident_cross_section", &QED::totalCoulombTridentCrossSection, py::arg("atomic_number"), py::arg("gamma"))
         .def("differential_coulomb_trident_cross_section_lower_limit", &QED::differentialCoulombTridentCrossSectionLowerLimit, py::arg("atomic_number"), py::arg("gamma"), py::arg("positron_energy"))
         .def("differential_coulomb_trident_cross_section_upper_limit", &QED::differentialCoulombTridentCrossSectionUpperLimit, py::arg("atomic_number"), py::arg("gamma"), py::arg("positron_energy"))
-        .def("differential_coulomb_trident_cross_section", &QED::differentialCoulombTridentCrossSection, py::arg("atomic_number"), py::arg("gamma"), py::arg("positron_energy"));
+        .def("differential_coulomb_trident_cross_section", &QED::differentialCoulombTridentCrossSection, py::arg("atomic_number"), py::arg("gamma"), py::arg("positron_energy"))
+        .def("differential_breit_wheeler_pair_production", &QED::differentialBreitWheelerPairProduction, py::arg("gamma_photon"), py::arg("chi_photon"), py::arg("chi_positron"));
     
     py::class_<QEDBlackburn>(m, "QEDBlackburn")
         .def(py::init<>())

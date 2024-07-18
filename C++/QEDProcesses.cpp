@@ -197,7 +197,7 @@ QED::QED()
     }
 
    
-    double QED::bremmstrahlungCrossSection(double atomic_number, double gamma, double lower_bound, double upper_bound) 
+    double QED::bremmstrahlungCrossSection(double atomic_number, double gamma) 
     {
         /*
 
@@ -217,7 +217,7 @@ QED::QED()
 
         Returns
         -------
-            the Bremmstrahlung cross section
+            the Bremmstrahlung cross section in cm^2
         
         */
 
@@ -256,6 +256,8 @@ QED::QED()
 
         double error_estimate = 0.0;
         double L1_norm = 1;
+        double lower_bound = 1.0;
+        double upper_bound = gamma - 1.0;
         double result = boost::math::quadrature::trapezoidal(integrand, lower_bound, upper_bound, error_estimate, L1_norm);
 
         return result;
@@ -313,7 +315,7 @@ QED::QED()
         }
     }
 
-    double QED::betheHeitlerCrossSection(double k, double atomic_number, double lower_bound, double upper_bound)
+    double QED::betheHeitlerCrossSection(double k, double atomic_number)
     {
         /*
         Calculate the Bethe-Heitler cross section.
@@ -326,6 +328,10 @@ QED::QED()
 
             double error_estimate = 0.0;
             double L1_norm = 1.0;
+            double lower_bound = 1.0;
+            double upper_bound = k - 1.0;
+            
+
             double result = boost::math::quadrature::trapezoidal(integrand, lower_bound, upper_bound, error_estimate, L1_norm);
             
             return result;
@@ -627,6 +633,60 @@ QED::QED()
             return 0.0;
          }
     }
+
+    double QED::differentialBreitWheelerPairProduction(double gamma_photon, double chi_photon, double chi_positron) {
+        /*
+        Calculate the differential Breit-Wheeler pair production rate.
+
+        Parameters
+        ----------
+        Input:
+            gamma : double
+            Incident photon energy normalized in mc^2 units.
+
+            chi_photon : float
+            Quantum nonlinearity parameter for the incident photon
+
+            chi_positron : float
+            quantum nonlinearity parameter for the produced positron
+
+        Returns
+        -------
+        the differential Coulomb trident cross section
+        */
+        bool conditions = !(gamma_photon > 2.0 && chi_positron < chi_photon && chi_positron > chi_photon / gamma_photon);
+
+        if (conditions) {
+            return 0.0;
+        }
+
+        const double chi_electron = chi_photon - chi_positron;
+        const double x = pow(chi_photon / (chi_electron * chi_positron), 2.0 / 3.0);
+
+        double part1 = m_e * c * c * chi_photon * alpha / (h_bar * gamma_photon);
+        double part2 = 1.0 / (PI * sqrt(3.0) * pow(chi_photon, 2));
+
+        auto T1 = [](double s) {
+            return sqrt(s) * cyl_bessel_k(1.0 / 3.0, (2.0 / 3.0) * pow(s, 3.0 / 2.0));
+        };
+
+        auto T2 = [x, chi_photon](double s) {
+            return (2.0 - chi_photon * pow(x, 3.0 / 2.0)) * cyl_bessel_k(2.0 / 3.0, (2.0 / 3.0) * pow(x, 3.0 / 2.0));
+        };
+
+        double lower_limit = x;
+        double upper_limit = 1e6; // or a large number if infinity is not supported
+
+        // Integrate T1 from x to a large upper limit
+        double result_T1 = boost::math::quadrature::trapezoidal(T1, lower_limit, upper_limit);
+
+        double result_T2 = T2(x);
+
+        bool test = (chi_electron > chi_photon / gamma_photon) && (chi_electron < chi_photon * (1.0 - 1.0 / gamma_photon));
+
+        return test * part1 * part2 * (result_T1 - result_T2);
+    }
+
 
 
 QEDBlackburn::QEDBlackburn()

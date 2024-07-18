@@ -24,9 +24,9 @@ public:
     double relBremmstrahlungDifferentialCrossSection(double atomic_number, double k, double gamma1);
     double coulombCorrectionTerm(double atomic_number, int n = 10);
     double ultraRelBremmstrahlungDifferentialCrossSection(double atomic_number, double k,double gamma1);
-    double bremmstrahlungCrossSection(double atomic_number, double gamma, double lower_bound, double upper_bound);
+    double bremmstrahlungCrossSection(double atomic_number, double gamma);
     double diffBetheHeitlerCrossSection(double gamma_p, double k, double atomic_number);
-    double betheHeitlerCrossSection(double k, double atomic_number, double lower_bound, double upper_bound);
+    double betheHeitlerCrossSection(double k, double atomic_number);
     std::tuple<double,double,double,double,double> calculateCCoefficient(double gamma);
     double nonRelativisticCoulombTridentDiffCrossSection(double atomic_number, double gamma, double positron_energy);
     double relativisticCoulombTridentDiffCrossSection(double atomic_number, double gamma, double positron_energy);
@@ -36,7 +36,7 @@ public:
     double differentialCoulombTridentCrossSectionLowerLimit(double atomic_number, double gamma, double positron_energy);    
     double differentialCoulombTridentCrossSectionUpperLimit(double atomic_number, double gamma, double positron_energy);
     double differentialCoulombTridentCrossSection(double atomic_number, double gamma, double positron_energy);
-
+    double differentialBreitWheelerPairProduction(double gamma, double chi_photon, double chi_positron);
 };
 
 class QEDBlackburn{
